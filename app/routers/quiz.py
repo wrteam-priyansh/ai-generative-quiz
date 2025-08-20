@@ -1,17 +1,22 @@
 from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Depends
+from fastapi.responses import StreamingResponse
 from typing import List, Optional
 import logging
 from datetime import datetime
+import io
 
 from app.services.gemini_service import GeminiQuestionGenerationService
 from app.services.text_extraction import TextExtractionService
+from app.services.file_generation_service import FileGenerationService
 from app.models.quiz import (
     QuizGenerationRequest,
     FileUploadRequest,
     QuizResponse,
     Question,
     QuestionType,
-    DifficultyLevel
+    DifficultyLevel,
+    DownloadRequest,
+    AnswerKeyRequest
 )
 from app.models.response import success_response, error_response
 from app.core.config import settings
@@ -21,6 +26,7 @@ router = APIRouter()
 
 ai_service = GeminiQuestionGenerationService()
 text_service = TextExtractionService()
+file_generation_service = FileGenerationService()
 
 @router.post("/generate")
 async def generate_quiz_from_text(request: QuizGenerationRequest):
@@ -319,3 +325,255 @@ async def get_usage_examples():
             }
         }
     }, "Usage examples retrieved successfully")
+
+@router.post("/download/txt")
+async def download_quiz_txt(request: DownloadRequest):
+    """Download quiz questions as TXT file"""
+    try:
+        # Extract parameters from request
+        questions = request.questions
+        include_answers = request.include_answers
+        topic = request.topic
+        difficulty_levels = request.difficulty_levels
+        
+        # Convert dict questions back to Question objects
+        question_objects = []
+        for q_data in questions:
+            try:
+                # Convert question type
+                question_type = QuestionType(q_data.get("question_type", "multiple_choice"))
+                
+                # Handle options for multiple choice
+                options = None
+                if question_type == QuestionType.MULTIPLE_CHOICE and q_data.get("options"):
+                    from app.models.quiz import MultipleChoiceOption
+                    options = [
+                        MultipleChoiceOption(
+                            text=opt["text"],
+                            is_correct=opt["is_correct"]
+                        )
+                        for opt in q_data["options"]
+                    ]
+                
+                question = Question(
+                    id=q_data.get("id", ""),
+                    question_text=q_data["question_text"],
+                    question_type=question_type,
+                    options=options,
+                    correct_answer=q_data.get("correct_answer"),
+                    explanation=q_data.get("explanation")
+                )
+                question_objects.append(question)
+            except Exception as e:
+                logger.warning(f"Skipping invalid question: {str(e)}")
+                continue
+        
+        if not question_objects:
+            return error_response("No valid questions provided")
+        
+        # Prepare metadata
+        quiz_metadata = {
+            "generated_at": datetime.now().isoformat(),
+            "total_questions": len(question_objects),
+            "topic": topic
+        }
+        
+        if difficulty_levels:
+            quiz_metadata["difficulty_levels"] = difficulty_levels
+        
+        # Generate content
+        if include_answers:
+            content = file_generation_service.generate_txt_content(question_objects, quiz_metadata)
+        else:
+            # Generate questions without answer markers
+            content_lines = []
+            content_lines.append("=" * 60)
+            content_lines.append("AI GENERATED QUIZ")
+            content_lines.append("=" * 60)
+            content_lines.append("")
+            
+            if quiz_metadata:
+                content_lines.append(f"Generated: {quiz_metadata.get('generated_at', datetime.now().isoformat())}")
+                content_lines.append(f"Total Questions: {quiz_metadata.get('total_questions', len(question_objects))}")
+                if quiz_metadata.get('topic'):
+                    content_lines.append(f"Topic: {quiz_metadata['topic']}")
+                content_lines.append("")
+            
+            content_lines.append("-" * 60)
+            content_lines.append("QUESTIONS")
+            content_lines.append("-" * 60)
+            content_lines.append("")
+            
+            for i, question in enumerate(question_objects, 1):
+                content_lines.append(f"Question {i}:")
+                content_lines.append(f"Q: {question.question_text}")
+                content_lines.append("")
+                
+                if question.question_type == QuestionType.MULTIPLE_CHOICE and question.options:
+                    content_lines.append("Options:")
+                    for j, option in enumerate(question.options):
+                        letter = chr(65 + j)  # A, B, C, D
+                        content_lines.append(f"  {letter}) {option.text}")
+                    content_lines.append("")
+                elif question.question_type == QuestionType.TRUE_FALSE:
+                    content_lines.append("Options:")
+                    content_lines.append("  A) True")
+                    content_lines.append("  B) False")
+                    content_lines.append("")
+                
+                content_lines.append("-" * 40)
+                content_lines.append("")
+            
+            content = "\n".join(content_lines)
+        
+        # Generate filename
+        filename = file_generation_service.get_filename(quiz_metadata, "txt", include_answers)
+        
+        # Create response
+        return StreamingResponse(
+            io.StringIO(content),
+            media_type="text/plain",
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
+        )
+    
+    except Exception as e:
+        logger.error(f"Error generating TXT download: {str(e)}")
+        return error_response("Failed to generate TXT file")
+
+@router.post("/download/pdf")
+async def download_quiz_pdf(request: DownloadRequest):
+    """Download quiz questions as PDF file"""
+    try:
+        # Extract parameters from request
+        questions = request.questions
+        include_answers = request.include_answers
+        topic = request.topic
+        difficulty_levels = request.difficulty_levels
+        
+        # Convert dict questions back to Question objects
+        question_objects = []
+        for q_data in questions:
+            try:
+                # Convert question type
+                question_type = QuestionType(q_data.get("question_type", "multiple_choice"))
+                
+                # Handle options for multiple choice
+                options = None
+                if question_type == QuestionType.MULTIPLE_CHOICE and q_data.get("options"):
+                    from app.models.quiz import MultipleChoiceOption
+                    options = [
+                        MultipleChoiceOption(
+                            text=opt["text"],
+                            is_correct=opt["is_correct"]
+                        )
+                        for opt in q_data["options"]
+                    ]
+                
+                question = Question(
+                    id=q_data.get("id", ""),
+                    question_text=q_data["question_text"],
+                    question_type=question_type,
+                    options=options,
+                    correct_answer=q_data.get("correct_answer"),
+                    explanation=q_data.get("explanation")
+                )
+                question_objects.append(question)
+            except Exception as e:
+                logger.warning(f"Skipping invalid question: {str(e)}")
+                continue
+        
+        if not question_objects:
+            return error_response("No valid questions provided")
+        
+        # Prepare metadata
+        quiz_metadata = {
+            "generated_at": datetime.now().isoformat(),
+            "total_questions": len(question_objects),
+            "topic": topic
+        }
+        
+        if difficulty_levels:
+            quiz_metadata["difficulty_levels"] = difficulty_levels
+        
+        # Generate PDF content
+        pdf_content = file_generation_service.generate_pdf_content(question_objects, quiz_metadata)
+        
+        # Generate filename
+        filename = file_generation_service.get_filename(quiz_metadata, "pdf", include_answers)
+        
+        # Create response
+        return StreamingResponse(
+            io.BytesIO(pdf_content),
+            media_type="application/pdf",
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
+        )
+    
+    except Exception as e:
+        logger.error(f"Error generating PDF download: {str(e)}")
+        return error_response("Failed to generate PDF file")
+
+@router.post("/download/answer-key")
+async def download_answer_key(request: AnswerKeyRequest):
+    """Download answer key as TXT file"""
+    try:
+        # Extract parameters from request
+        questions = request.questions
+        topic = request.topic
+        
+        # Convert dict questions back to Question objects
+        question_objects = []
+        for q_data in questions:
+            try:
+                # Convert question type
+                question_type = QuestionType(q_data.get("question_type", "multiple_choice"))
+                
+                # Handle options for multiple choice
+                options = None
+                if question_type == QuestionType.MULTIPLE_CHOICE and q_data.get("options"):
+                    from app.models.quiz import MultipleChoiceOption
+                    options = [
+                        MultipleChoiceOption(
+                            text=opt["text"],
+                            is_correct=opt["is_correct"]
+                        )
+                        for opt in q_data["options"]
+                    ]
+                
+                question = Question(
+                    id=q_data.get("id", ""),
+                    question_text=q_data["question_text"],
+                    question_type=question_type,
+                    options=options,
+                    correct_answer=q_data.get("correct_answer"),
+                    explanation=q_data.get("explanation")
+                )
+                question_objects.append(question)
+            except Exception as e:
+                logger.warning(f"Skipping invalid question: {str(e)}")
+                continue
+        
+        if not question_objects:
+            return error_response("No valid questions provided")
+        
+        # Generate answer key content
+        content = file_generation_service.generate_answer_key_txt(question_objects)
+        
+        # Prepare metadata for filename
+        quiz_metadata = {
+            "topic": topic,
+            "generated_at": datetime.now().isoformat()
+        }
+        
+        # Generate filename
+        filename = file_generation_service.get_filename(quiz_metadata, "txt", True).replace(".txt", "_answer_key.txt")
+        
+        # Create response
+        return StreamingResponse(
+            io.StringIO(content),
+            media_type="text/plain",
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
+        )
+    
+    except Exception as e:
+        logger.error(f"Error generating answer key: {str(e)}")
+        return error_response("Failed to generate answer key")

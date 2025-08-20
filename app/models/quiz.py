@@ -48,7 +48,16 @@ class GoogleFormRequest(BaseModel):
     questions: List[Question]
     form_title: str = Field(default="AI Generated Quiz", description="Title for the Google Form")
     form_description: Optional[str] = Field(default=None, description="Description for the Google Form")
-    is_quiz: bool = Field(default=True, description="Whether to create as a quiz with scoring")
+
+class DownloadRequest(BaseModel):
+    questions: List[dict] = Field(..., description="List of question objects to download")
+    include_answers: bool = Field(default=True, description="Include answers in the download")
+    topic: Optional[str] = Field(default=None, description="Topic for the quiz")
+    difficulty_levels: Optional[List[str]] = Field(default=None, description="Difficulty levels for metadata")
+
+class AnswerKeyRequest(BaseModel):
+    questions: List[dict] = Field(..., description="List of question objects for answer key")
+    topic: Optional[str] = Field(default=None, description="Topic for the quiz")
 
 class GoogleFormResponse(BaseModel):
     form_id: str

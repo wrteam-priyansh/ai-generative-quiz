@@ -1,0 +1,227 @@
+[
+      {
+        "id": "8ecc32d3-03c6-4707-9630-d986afc7a774",
+        "question_text": "In what year did Kane Williamson make his first-class debut?",
+        "question_type": "multiple_choice",
+        "options": [
+          {
+            "text": "2006",
+            "is_correct": false
+          },
+          {
+            "text": "2007",
+            "is_correct": true
+          },
+          {
+            "text": "2008",
+            "is_correct": false
+          },
+          {
+            "text": "2010",
+            "is_correct": false
+          }
+        ],
+        "correct_answer": null,
+        "explanation": "The text explicitly states that Williamson made his first-class debut in 2007."
+      },
+      {
+        "id": "d07facd6-de1a-4ee8-9655-16d51c76831d",
+        "question_text": "Which ICC trophy did New Zealand win under Kane Williamson's captaincy?",
+        "question_type": "multiple_choice",
+        "options": [
+          {
+            "text": "2015 Cricket World Cup",
+            "is_correct": false
+          },
+          {
+            "text": "2019 Cricket World Cup",
+            "is_correct": false
+          },
+          {
+            "text": "2021 T20 World Cup",
+            "is_correct": false
+          },
+          {
+            "text": "2021 ICC World Test Championship",
+            "is_correct": true
+          }
+        ],
+        "correct_answer": null,
+        "explanation": "The text mentions New Zealand's victory in the 2021 ICC World Test Championship under Williamson's leadership."
+      },
+      {
+        "id": "7cf84994-651d-43ac-b260-16d6a5cfbea5",
+        "question_text": "What award did Kane Williamson win at the 2019 Cricket World Cup?",
+        "question_type": "multiple_choice",
+        "options": [
+          {
+            "text": "Best Bowler",
+            "is_correct": false
+          },
+          {
+            "text": "Player of the Tournament",
+            "is_correct": true
+          },
+          {
+            "text": "Best Wicket-Keeper",
+            "is_correct": false
+          },
+          {
+            "text": "Best Captain",
+            "is_correct": false
+          }
+        ],
+        "correct_answer": null,
+        "explanation": "The text clearly states that Williamson won the Player of the Tournament award in the 2019 Cricket World Cup."
+      },
+      {
+        "id": "d1d34658-0401-40e1-a5aa-965e5a9722c3",
+        "question_text": "What was Kane Williamson's highest batting ranking in Test matches?",
+        "question_type": "multiple_choice",
+        "options": [
+          {
+            "text": "Number Two",
+            "is_correct": false
+          },
+          {
+            "text": "Number Three",
+            "is_correct": false
+          },
+          {
+            "text": "Number One",
+            "is_correct": true
+          },
+          {
+            "text": "Number Four",
+            "is_correct": false
+          }
+        ],
+        "correct_answer": null,
+        "explanation": "The text indicates that Williamson achieved the number one Test batting ranking."
+      },
+      {
+        "id": "a04cba79-6d12-4bb0-a39a-d4566f45f551",
+        "question_text": "Kane Williamson's father played which sport professionally?",
+        "question_type": "multiple_choice",
+        "options": [
+          {
+            "text": "Basketball",
+            "is_correct": false
+          },
+          {
+            "text": "Cricket",
+            "is_correct": true
+          },
+          {
+            "text": "Rugby",
+            "is_correct": false
+          },
+          {
+            "text": "Soccer",
+            "is_correct": false
+          }
+        ],
+        "correct_answer": null,
+        "explanation": "The passage mentions that Williamson's father, Brett, was a former cricketer."
+      },
+      {
+        "id": "296f113d-46ea-40b8-a848-19dda58db450",
+        "question_text": "In what year did Kane Williamson become New Zealand's all-time leading Test run-scorer?",
+        "question_type": "multiple_choice",
+        "options": [
+          {
+            "text": "2022",
+            "is_correct": false
+          },
+          {
+            "text": "2021",
+            "is_correct": false
+          },
+          {
+            "text": "2020",
+            "is_correct": false
+          },
+          {
+            "text": "2023",
+            "is_correct": true
+          }
+        ],
+        "correct_answer": null,
+        "explanation": "The text specifies February 27, 2023, as the date he achieved this milestone."
+      },
+      {
+        "id": "2022149b-4ace-4fb2-a43d-ac2d1b645231",
+        "question_text": "What is Kane Williamson's batting style?",
+        "question_type": "multiple_choice",
+        "options": [
+          {
+            "text": "Left-handed batsman",
+            "is_correct": false
+          },
+          {
+            "text": "Right-handed batsman",
+            "is_correct": true
+          },
+          {
+            "text": "Left-arm fast bowler",
+            "is_correct": false
+          },
+          {
+            "text": "Right-arm leg spinner",
+            "is_correct": false
+          }
+        ],
+        "correct_answer": null,
+        "explanation": "The provided text clearly states that he is a right-handed batsman."
+      },
+      {
+        "id": "bf8c5db4-bd9e-46a9-9922-f44fb70e8409",
+        "question_text": "Approximately how many centuries did Kane Williamson score before finishing school?",
+        "question_type": "multiple_choice",
+        "options": [
+          {
+            "text": "20",
+            "is_correct": false
+          },
+          {
+            "text": "30",
+            "is_correct": false
+          },
+          {
+            "text": "40",
+            "is_correct": true
+          },
+          {
+            "text": "50",
+            "is_correct": false
+          }
+        ],
+        "correct_answer": null,
+        "explanation": "The text explicitly mentions that he scored 40 centuries before leaving school."
+      },
+      {
+        "id": "1ea92934-9915-4ab5-9e05-a0bd4ebbd15b",
+        "question_text": "Which cricket legend praised Kane Williamson's potential?",
+        "question_type": "multiple_choice",
+        "options": [
+          {
+            "text": "Sir Don Bradman",
+            "is_correct": false
+          },
+          {
+            "text": "Sachin Tendulkar",
+            "is_correct": false
+          },
+          {
+            "text": "Martin Crowe",
+            "is_correct": true
+          },
+          {
+            "text": "Brian Lara",
+            "is_correct": false
+          }
+        ],
+        "correct_answer": null,
+        "explanation": "The text names Martin Crowe as the cricket legend who praised Williamson's potential."
+      }
+    ]
