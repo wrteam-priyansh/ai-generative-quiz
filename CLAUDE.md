@@ -1,0 +1,137 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Development Commands
+
+### Running the Application
+```bash
+# Start development server
+python main.py
+# or
+uvicorn main:app --reload --host 0.0.0.0 --port 8000
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Setup environment variables
+cp .env.example .env
+# Edit .env with your API keys and configuration
+```
+
+### Environment Setup
+Required environment variables must be configured in `.env`:
+- `GOOGLE_GEMINI_API_KEY` - Google AI Studio API key for question generation
+- `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` - Google OAuth credentials for Forms API
+- `SECRET_KEY` - Random string for session management
+
+### API Testing
+```bash
+# Health check
+curl http://localhost:8000/health
+
+# Test Gemini connectivity
+curl http://localhost:8000/quiz/test-gemini
+
+# Get API documentation
+curl http://localhost:8000/quiz/usage-examples
+```
+
+## Architecture Overview
+
+### Core Service Architecture
+The application follows a **service-oriented architecture** with three main integration layers:
+
+1. **Text Processing Pipeline**: `text_extraction.py` → `text_chunking.py` → `gemini_service.py`
+2. **Google Integration**: `auth_service.py` → `google_forms_service.py`
+3. **Response Standardization**: All endpoints use `response.py` helpers for consistent `{error, data, message}` format
+
+### Key Architectural Patterns
+
+#### Smart Text Chunking
+Large documents are automatically chunked when exceeding `GEMINI_MAX_INPUT_CHARS` (default: 4000). The chunking strategy:
+- Primary: Paragraph-based splitting
+- Fallback: Sentence-based splitting  
+- Last resort: Word-based splitting
+Questions are distributed proportionally across chunks based on content size.
+
+#### Multi-Type Input Handling
+Both question types and difficulty levels support flexible input parsing:
+- `question_types`: Accepts "mcq", "multiple_choice", "tf", "true_false", "essay", "open_ended"
+- `difficulty_levels`: Accepts "easy", "basic", "medium", "intermediate", "hard", "advanced"
+
+#### Standardized Response Format
+All API responses follow the pattern:
+```json
+{
+  "error": false,
+  "data": { /* actual response content */ },
+  "message": "Success description"
+}
+```
+Use `success_response()` and `error_response()` helpers from `app.models.response`.
+
+### Service Dependencies
+- **GeminiQuestionGenerationService**: Requires `GOOGLE_GEMINI_API_KEY`, handles both single-text and chunked processing
+- **GoogleAuthService**: Manages OAuth flow, requires Google Cloud Console setup
+- **GoogleFormsService**: Creates forms with up to 40 questions, requires authenticated credentials
+- **TextExtractionService**: Processes PDF/DOCX/TXT files without external dependencies
+
+## Configuration Management
+
+### Critical Settings in `app/core/config.py`
+- `MAX_QUESTIONS_PER_QUIZ: int = 40` - Maximum questions per generation
+- `GEMINI_MAX_INPUT_CHARS: int = 4000` - Text chunking threshold
+- `ENABLE_TEXT_CHUNKING: bool = True` - Toggle chunking for large texts
+- `MAX_FILE_SIZE: int = 10MB` - File upload limit
+- `ALLOWED_FILE_TYPES: List[str] = ["pdf", "docx", "txt"]`
+
+### Router-Specific Behavior
+- **Quiz router** (`/quiz`): Handles both text and file input with automatic chunking
+- **Auth router** (`/auth`): Manages Google OAuth flow and token refresh
+- **Forms router** (`/forms`): Creates Google Forms, requires Authorization header with credentials JSON
+
+## Working with Question Generation
+
+### Supported Input Combinations
+```python
+# Multiple question types and difficulty levels
+{
+  "question_types": ["multiple_choice", "true_false", "open_ended"],
+  "difficulty_levels": ["basic", "intermediate", "advanced"],
+  "num_questions": 20  # Up to 40 supported
+}
+```
+
+### File Upload Processing
+File uploads automatically extract text and apply the same chunking logic as text input. The response includes `text_processing` metadata showing whether chunking was used.
+
+### Google Forms Integration
+Forms are created with automatic question type conversion:
+- `multiple_choice` → Radio buttons with correct answer marking
+- `true_false` → Radio buttons (True/False)
+- `open_ended` → Paragraph text input
+Quiz mode is enabled by default with automatic scoring.
+
+## Error Handling
+
+### Custom Exception Types
+- `QuizGenerationException` - AI service failures
+- `TextExtractionException` - Document processing errors  
+- `GoogleAPIException` - Google service integration issues
+- `AuthenticationException` - OAuth and credential problems
+
+All exceptions are automatically caught and converted to standardized error responses via registered exception handlers in `main.py`.
+
+## Key Integration Points
+
+### Google Services Setup
+1. Enable Google Forms API and Google Drive API in Google Cloud Console
+2. Create OAuth 2.0 credentials with authorized redirect URI: `http://localhost:8000/auth/callback`
+3. Get Gemini API key from Google AI Studio
+
+### Text Processing Flow
+Large documents trigger automatic chunking, with questions distributed across chunks proportionally. The system preserves context by splitting on paragraph boundaries first, falling back to sentences, then words if necessary.
+
+### Response Enhancement
+All quiz generation responses include `quiz_settings` and `text_processing` metadata to inform clients about the processing that occurred, including whether chunking was used and what parameters were applied.
