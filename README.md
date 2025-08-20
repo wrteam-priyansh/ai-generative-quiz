@@ -13,6 +13,8 @@ A FastAPI backend service for generating quiz questions using AI and creating Go
 - **Smart Text Chunking**: Handles large documents by intelligently splitting content while preserving context
 - **Flexible Input Options**: Accept various question type and difficulty level formats (synonyms and abbreviations)
 - **Enhanced Customization**: Configure up to 40 questions, multiple question types, multiple difficulty levels, and topic focus
+- **File Download Support**: Download generated quizzes as TXT or PDF files with professional formatting
+- **Answer Key Generation**: Generate separate answer keys for educator use
 - **Standardized API Responses**: Consistent `{error, data, message}` response format across all endpoints
 
 ## Prerequisites
@@ -100,6 +102,11 @@ uvicorn main:app --reload --host 0.0.0.0 --port 8000
 - `GET /quiz/usage-examples` - Get comprehensive usage examples and API documentation
 - `GET /quiz/limits` - Get system limits and configuration
 
+### File Downloads
+- `POST /quiz/download/txt` - Download quiz as formatted TXT file
+- `POST /quiz/download/pdf` - Download quiz as professional PDF file
+- `POST /quiz/download/answer-key` - Download answer key as TXT file
+
 ### Google Forms
 - `POST /forms/create` - Create Google Form with questions
 - `POST /forms/create-from-quiz` - Create form from quiz response
@@ -144,7 +151,42 @@ curl -X POST "http://localhost:8000/forms/create" \
   }'
 ```
 
-### 4. **Get Usage Examples**:
+### 4. **Download Quiz as PDF**:
+```bash
+curl -X POST "http://localhost:8000/quiz/download/pdf" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "questions": [
+      {
+        "id": "uuid-here",
+        "question_text": "What year did the American Revolution begin?",
+        "question_type": "multiple_choice",
+        "options": [
+          {"text": "1774", "is_correct": false},
+          {"text": "1775", "is_correct": true},
+          {"text": "1776", "is_correct": false},
+          {"text": "1777", "is_correct": false}
+        ],
+        "explanation": "The American Revolution began in 1775..."
+      }
+    ],
+    "include_answers": true,
+    "topic": "American History",
+    "difficulty_levels": ["intermediate"]
+  }'
+```
+
+### 5. **Download Answer Key**:
+```bash
+curl -X POST "http://localhost:8000/quiz/download/answer-key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "questions": [...],
+    "topic": "American History"
+  }'
+```
+
+### 6. **Get Usage Examples**:
 ```bash
 curl -X GET "http://localhost:8000/quiz/usage-examples"
 ```
@@ -171,6 +213,8 @@ ai-generative-quiz/
 │   │   ├── auth_service.py    # Google OAuth service
 │   │   ├── google_forms_service.py  # Google Forms integration
 │   │   ├── text_extraction.py # Document text extraction
+│   │   ├── text_chunking.py   # Smart text chunking service
+│   │   ├── file_generation_service.py  # File download generation
 │   │   └── __init__.py
 │   ├── utils/
 │   │   ├── exceptions.py      # Custom exceptions

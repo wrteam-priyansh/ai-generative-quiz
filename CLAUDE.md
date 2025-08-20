@@ -40,11 +40,12 @@ curl http://localhost:8000/quiz/usage-examples
 ## Architecture Overview
 
 ### Core Service Architecture
-The application follows a **service-oriented architecture** with three main integration layers:
+The application follows a **service-oriented architecture** with four main integration layers:
 
 1. **Text Processing Pipeline**: `text_extraction.py` → `text_chunking.py` → `gemini_service.py`
 2. **Google Integration**: `auth_service.py` → `google_forms_service.py`
-3. **Response Standardization**: All endpoints use `response.py` helpers for consistent `{error, data, message}` format
+3. **File Generation Pipeline**: `file_generation_service.py` → Professional TXT/PDF downloads
+4. **Response Standardization**: All endpoints use `response.py` helpers for consistent `{error, data, message}` format
 
 ### Key Architectural Patterns
 
@@ -76,6 +77,7 @@ Use `success_response()` and `error_response()` helpers from `app.models.respons
 - **GoogleAuthService**: Manages OAuth flow, requires Google Cloud Console setup
 - **GoogleFormsService**: Creates forms with up to 40 questions, requires authenticated credentials
 - **TextExtractionService**: Processes PDF/DOCX/TXT files without external dependencies
+- **FileGenerationService**: Generates TXT and PDF downloads using ReportLab, no external dependencies
 
 ## Configuration Management
 
@@ -90,6 +92,7 @@ Use `success_response()` and `error_response()` helpers from `app.models.respons
 - **Quiz router** (`/quiz`): Handles both text and file input with automatic chunking
 - **Auth router** (`/auth`): Manages Google OAuth flow and token refresh
 - **Forms router** (`/forms`): Creates Google Forms, requires Authorization header with credentials JSON
+- **Download endpoints** (`/quiz/download`): Generate formatted files from quiz questions in JSON format
 
 ## Working with Question Generation
 
@@ -135,3 +138,58 @@ Large documents trigger automatic chunking, with questions distributed across ch
 
 ### Response Enhancement
 All quiz generation responses include `quiz_settings` and `text_processing` metadata to inform clients about the processing that occurred, including whether chunking was used and what parameters were applied.
+
+## File Download System
+
+### Download Endpoints
+- `POST /quiz/download/txt` - Generate formatted TXT file with questions
+- `POST /quiz/download/pdf` - Generate professional PDF using ReportLab 
+- `POST /quiz/download/answer-key` - Generate answer key in TXT format
+
+### Download Request Format
+All download endpoints accept JSON requests with the following structure:
+```json
+{
+  "questions": [
+    {
+      "id": "uuid",
+      "question_text": "Question content",
+      "question_type": "multiple_choice",
+      "options": [
+        {"text": "Option A", "is_correct": false},
+        {"text": "Option B", "is_correct": true}
+      ],
+      "explanation": "Optional explanation"
+    }
+  ],
+  "include_answers": true,  // TXT/PDF only
+  "topic": "Optional topic name",
+  "difficulty_levels": ["intermediate", "advanced"]  // Optional metadata
+}
+```
+
+### File Generation Features
+- **Professional PDF formatting**: Multi-page layout with proper styling, headers, and page breaks
+- **Answer marking**: Visual indicators (✓) for correct answers when `include_answers: true`
+- **Metadata inclusion**: Topic, generation date, difficulty levels in file headers
+- **Multiple formats**: Questions-only or questions-with-answers for TXT files
+- **Automatic filenames**: Generated based on topic and timestamp
+- **Streaming responses**: Files are generated and streamed directly without temporary storage
+
+### Working with Downloads
+After generating a quiz using `/quiz/generate` or `/quiz/generate-from-file`, extract the `questions` array from the response data and POST it to any download endpoint:
+
+```python
+# 1. Generate quiz
+quiz_response = POST("/quiz/generate", {...})
+questions = quiz_response["data"]["questions"]
+
+# 2. Download as PDF with answers
+pdf_response = POST("/quiz/download/pdf", {
+    "questions": questions,
+    "include_answers": True,
+    "topic": "My Quiz Topic"
+})
+```
+
+The FileGenerationService handles all formatting automatically, including question type-specific formatting, option labeling (A, B, C, D), and professional document structure.
