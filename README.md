@@ -4,18 +4,46 @@ A FastAPI backend service for generating quiz questions using AI and creating Go
 
 ## Features
 
-- **AI-Powered Question Generation**: Uses Google Gemini to generate quiz questions from text or uploaded documents
-- **Document Processing**: Supports PDF, DOCX, and TXT file formats for text extraction with smart chunking
-- **Google Forms Integration**: Automatically creates Google Forms with generated questions
-- **Google OAuth 2.0**: Secure authentication for Google Forms access
-- **Multiple Question Types**: Supports multiple-choice, true/false, and open-ended questions
-- **Multiple Difficulty Levels**: Generate questions across basic, intermediate, and advanced difficulty levels
-- **Smart Text Chunking**: Handles large documents by intelligently splitting content while preserving context
-- **Flexible Input Options**: Accept various question type and difficulty level formats (synonyms and abbreviations)
-- **Enhanced Customization**: Configure up to 40 questions, multiple question types, multiple difficulty levels, and topic focus
-- **File Download Support**: Download generated quizzes as TXT or PDF files with professional formatting
-- **Answer Key Generation**: Generate separate answer keys for educator use
-- **Standardized API Responses**: Consistent `{error, data, message}` response format across all endpoints
+### 🤖 AI-Powered Question Generation
+- **Google Gemini Integration**: Advanced AI-powered question generation with natural explanations
+- **Smart Question Distribution**: Automatically distributes questions across requested types and difficulty levels
+- **Context-Aware Chunking**: Intelligently processes large documents while preserving context
+- **Natural Explanations**: Generates conversational explanations without mechanical text references
+
+### 📄 Document Processing
+- **Multi-Format Support**: PDF, DOCX, and TXT file processing with robust text extraction
+- **Smart Text Chunking**: Handles large documents (>4000 chars) with paragraph/sentence-aware splitting
+- **File Validation**: Size limits (10MB) and type validation with detailed error messages
+
+### 📝 Question Types & Formats
+- **Multiple Choice**: 4-option questions with single correct answers
+- **True/False**: Consistent options array format with "True"/"False" choices
+- **Open-Ended**: Essay-style questions with sample answers
+- **Flexible Input**: Accepts synonyms (mcq, tf, essay) and various difficulty terms
+
+### 🔗 Google Services Integration
+- **OAuth 2.0 Flow**: Secure authentication with automatic frontend redirect
+- **Google Forms API**: Creates interactive forms with quiz mode and automatic scoring
+- **Drive API**: Manages form permissions and sharing
+- **Scope Management**: Handles OpenID Connect and proper scope ordering
+
+### 📊 Enhanced API Documentation
+- **Interactive Examples**: Comprehensive response examples for all endpoints
+- **Multiple Scenarios**: Success/failure cases, different question types, mixed formats
+- **Real Data**: Actual JSON structures with realistic sample data
+- **FastAPI Integration**: Auto-generated docs at `/docs` with dropdown examples
+
+### 💾 File Generation & Downloads
+- **Professional PDF**: Multi-page layout with proper styling and formatting
+- **Formatted TXT**: Clean text output with answer marking
+- **Answer Keys**: Separate educator files with explanations
+- **Metadata Support**: Topic, difficulty, timestamps in generated files
+
+### ⚙️ System Enhancements
+- **Robust Error Handling**: Specific error types with helpful messages
+- **Comprehensive Logging**: Debug-friendly logging with OAuth flow tracking
+- **Configuration Management**: Environment-based settings with validation
+- **CORS Support**: Frontend integration with configurable origins
 
 ## Prerequisites
 
@@ -88,10 +116,11 @@ uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ## API Endpoints
 
 ### Authentication
-- `GET /auth/google/authorize` - Get Google OAuth authorization URL
-- `GET /auth/callback` - Handle Google OAuth callback
-- `POST /auth/refresh` - Refresh access token
-- `POST /auth/validate` - Validate credentials
+- `GET /auth/google/authorize` - Get Google OAuth authorization URL with state parameter support
+- `GET /auth/callback` - Handle OAuth callback and redirect to frontend with auth results
+- `POST /auth/refresh` - Refresh access token using refresh token
+- `POST /auth/validate` - Validate existing credentials
+- `GET /auth/debug` - Debug OAuth configuration (development helper)
 
 ### Quiz Generation
 - `POST /quiz/generate` - Generate quiz from text input (supports multiple question types and difficulty levels)
@@ -108,10 +137,11 @@ uvicorn main:app --reload --host 0.0.0.0 --port 8000
 - `POST /quiz/download/answer-key` - Download answer key as TXT file
 
 ### Google Forms
-- `POST /forms/create` - Create Google Form with questions
-- `POST /forms/create-from-quiz` - Create form from quiz response
-- `GET /forms/{form_id}/responses` - Get form responses
-- `DELETE /forms/{form_id}` - Delete form
+- `POST /forms/create` - Create Google Form with quiz questions and automatic grading
+- `POST /forms/create-from-quiz` - Create form directly from quiz generation response
+- `GET /forms/{form_id}/responses` - Get form responses with scoring and analytics
+- `DELETE /forms/{form_id}` - Delete/trash form
+- `GET /forms/` - Get Google Forms integration information and capabilities
 
 ## Usage Examples
 
@@ -126,6 +156,32 @@ curl -X POST "http://localhost:8000/quiz/generate" \
     "difficulty_levels": ["basic", "intermediate", "advanced"],
     "topic": "American History"
   }'
+```
+
+**Response includes consistent format for all question types:**
+```json
+{
+  "error": false,
+  "data": {
+    "questions": [
+      {
+        "id": "uuid-here",
+        "question_text": "The American Revolution began in 1775.",
+        "question_type": "true_false",
+        "options": [
+          {"text": "True", "is_correct": true},
+          {"text": "False", "is_correct": false}
+        ],
+        "correct_answer": null,
+        "explanation": "The American Revolution indeed began in 1775 with the battles of Lexington and Concord."
+      }
+    ],
+    "total_questions": 1,
+    "quiz_settings": {...},
+    "text_processing": {...}
+  },
+  "message": "Quiz generated successfully"
+}
 ```
 
 ### 2. **Generate Quiz from File**:
@@ -186,9 +242,39 @@ curl -X POST "http://localhost:8000/quiz/download/answer-key" \
   }'
 ```
 
-### 6. **Get Usage Examples**:
+### 6. **OAuth Flow for Frontend Integration**:
+
+**Step 1: Get Authorization URL**
+```bash
+curl -X GET "http://localhost:8000/auth/google/authorize?state=http%3A%2F%2Flocalhost%3A3000%2Fgenerate%3Fauth%3Dsuccess"
+```
+
+**Step 2: After user authentication, backend automatically redirects to:**
+```
+http://localhost:3000/generate?auth=success&user_email=user@example.com&user_name=John%20Doe&credentials=eyJ0b2tlbiI6InlhMjk...
+```
+
+**Step 3: Frontend extracts auth data**
+```javascript
+const urlParams = new URLSearchParams(window.location.search);
+const authStatus = urlParams.get('auth'); // 'success' or 'error'
+const userEmail = urlParams.get('user_email');
+const credentialsB64 = urlParams.get('credentials');
+
+if (authStatus === 'success' && credentialsB64) {
+    const credentials = JSON.parse(atob(credentialsB64));
+    // Use credentials for Google Forms API calls
+}
+```
+
+### 7. **Get Comprehensive API Documentation**:
 ```bash
 curl -X GET "http://localhost:8000/quiz/usage-examples"
+```
+
+### 8. **Debug OAuth Configuration**:
+```bash
+curl -X GET "http://localhost:8000/auth/debug"
 ```
 
 ## Project Structure

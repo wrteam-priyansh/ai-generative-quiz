@@ -183,15 +183,30 @@ class GeminiQuestionGenerationService:
         types_str = ", ".join([t.value.replace("_", " ") for t in question_types])
         difficulty_str = ", ".join([d.value for d in difficulty_levels])
         
+        # Create distribution for question types
+        if len(question_types) == 1:
+            type_distribution = f"ALL {num_questions} questions must be of type: {types_str}"
+        else:
+            # Calculate roughly equal distribution
+            per_type = num_questions // len(question_types)
+            remainder = num_questions % len(question_types)
+            distributions = []
+            for i, qtype in enumerate(question_types):
+                count = per_type + (1 if i < remainder else 0)
+                distributions.append(f"{count} {qtype.value.replace('_', ' ')} questions")
+            type_distribution = "Distribute questions as follows: " + ", ".join(distributions)
+        
         prompt = f"""
 You are an expert educational content creator. Based on the following text, create {num_questions} high-quality quiz questions.
 
 Text to analyze:
 {text}
 
-Requirements:
-- Question types: {types_str}
+STRICT Requirements:
+- Question types: {type_distribution}
 - Difficulty levels: {difficulty_str} (distribute questions across these difficulty levels)
+- You MUST only generate questions of the specified types above
+- Do NOT generate any other question types not listed
 - Focus on key concepts, facts, and important details from the text
 - Ensure questions test comprehension and knowledge retention
 - Make questions educational and meaningful
@@ -214,19 +229,29 @@ Return your response as a JSON array with the following exact structure:
       {"text": "Option D", "is_correct": false}
     ],
     "correct_answer": "For true/false or open-ended questions",
-    "explanation": "Brief explanation of the correct answer"
+    "explanation": "Williamson made his first-class debut in 2007 for Tauranga Boys' College."
   }
 ]
 
-Important guidelines:
+Example of good vs bad explanations:
+❌ Bad: "The text explicitly states that his international debut was in 2010."
+❌ Bad: "According to the passage, New Zealand were runners-up in the 2019 Cricket World Cup."
+✅ Good: "His international cricket debut occurred in 2010."
+✅ Good: "New Zealand reached the final but finished as runners-up in the 2019 Cricket World Cup."
+
+CRITICAL Guidelines:
+- ONLY generate the exact question types specified in the requirements above
 - For multiple choice: Include exactly 4 options with only one correct answer
-- For true/false: Set correct_answer to "true" or "false" and omit options array
+- For true/false: Include exactly 2 options with "True" and "False" as text, mark the correct one with is_correct: true
 - For open-ended: Provide a sample correct answer in correct_answer field and omit options array
+- The question_type field in JSON MUST match exactly one of the requested types
 - Make questions clear and unambiguous
 - Ensure incorrect options are plausible but clearly wrong
 - Base all questions strictly on the provided text content
 - Questions should be at the specified difficulty level
-- Include helpful explanations for learning purposes
+- Write natural, conversational explanations without referencing "the text", "the passage", "according to", or similar phrases
+- Explanations should sound like a teacher explaining the concept directly
+- VERIFY each question matches the requested distribution before finalizing
 
 Return only valid JSON without any additional text or formatting.
 """
@@ -283,7 +308,7 @@ Return only valid JSON without any additional text or formatting.
                 options = None
                 correct_answer = None
                 
-                if question_type == QuestionType.MULTIPLE_CHOICE:
+                if question_type == QuestionType.MULTIPLE_CHOICE or question_type == QuestionType.TRUE_FALSE:
                     options_data = q_data.get("options", [])
                     if options_data:
                         options = [
@@ -294,7 +319,7 @@ Return only valid JSON without any additional text or formatting.
                             for opt in options_data
                         ]
                     else:
-                        logger.warning(f"No options provided for multiple choice question: {q_data.get('question_text', '')}")
+                        logger.warning(f"No options provided for {question_type.value} question: {q_data.get('question_text', '')}")
                         continue
                 else:
                     correct_answer = q_data.get("correct_answer")

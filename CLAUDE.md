@@ -193,3 +193,79 @@ pdf_response = POST("/quiz/download/pdf", {
 ```
 
 The FileGenerationService handles all formatting automatically, including question type-specific formatting, option labeling (A, B, C, D), and professional document structure.
+
+## Enhanced API Documentation
+
+### Interactive Response Examples
+All API endpoints now include comprehensive response examples in the FastAPI documentation at `/docs`:
+
+- **Multiple Scenarios**: Success/failure cases, different question types, mixed formats
+- **Real JSON Data**: Actual response structures with realistic sample data  
+- **Question Type Showcase**: Demonstrates the consistent options array format for true/false questions
+- **OAuth Flow Examples**: Complete authentication flow with real URLs and responses
+- **Error Cases**: Detailed error response examples with specific error messages
+
+### Documentation Access
+- **FastAPI Docs**: `http://localhost:8000/docs` - Interactive API documentation
+- **Usage Examples**: `GET /quiz/usage-examples` - Comprehensive API usage guide
+- **Debug Information**: `GET /auth/debug` - OAuth configuration debugging
+
+## OAuth Integration Enhancements
+
+### Fixed OAuth Flow Issues
+- **Scope Management**: Resolved OAuth scope mismatch by including `openid` scope proactively
+- **Frontend Redirect**: Backend now redirects to frontend after successful authentication instead of returning JSON
+- **Error Handling**: Enhanced error messages for common OAuth issues (`invalid_grant`, `scope_mismatch`)
+
+### OAuth Flow Process
+1. **Authorization**: `GET /auth/google/authorize?state=<frontend_url>` 
+2. **User Authentication**: Google OAuth consent screen
+3. **Backend Processing**: Token exchange and validation
+4. **Frontend Redirect**: Automatic redirect to frontend with auth results in URL parameters
+
+### OAuth Response Format
+After successful authentication, users are redirected to:
+```
+http://localhost:3000/generate?auth=success&user_email=user@example.com&user_name=John%20Doe&credentials=eyJ0b2tlbiI6InlhMjk...
+```
+
+Frontend can extract authentication data:
+```javascript
+const urlParams = new URLSearchParams(window.location.search);
+const authStatus = urlParams.get('auth'); // 'success' or 'error'
+const credentialsB64 = urlParams.get('credentials');
+const credentials = JSON.parse(atob(credentialsB64)); // Decode credentials
+```
+
+### OAuth Debugging
+- **Debug Endpoint**: `GET /auth/debug` provides configuration validation
+- **Enhanced Logging**: Detailed OAuth flow tracking in application logs
+- **Error Categorization**: Specific error types with troubleshooting guidance
+
+## AI Question Generation Improvements
+
+### True/False Question Format Standardization
+True/false questions now use consistent options array format:
+```json
+{
+  "question_type": "true_false",
+  "options": [
+    {"text": "True", "is_correct": true},
+    {"text": "False", "is_correct": false}
+  ],
+  "correct_answer": null,
+  "explanation": "Natural explanation without text references"
+}
+```
+
+### Enhanced Question Quality
+- **Natural Explanations**: Removed mechanical text references ("The text states..." → natural explanations)
+- **Strict Type Enforcement**: AI generates only requested question types with proper distribution
+- **Smart Distribution**: Questions are distributed proportionally across requested types and difficulty levels
+- **Improved Prompts**: Enhanced prompt engineering for better educational content
+
+### Question Type Distribution
+When requesting multiple question types, the system automatically distributes questions:
+- Single type: ALL questions of that type
+- Multiple types: Proportional distribution (e.g., 5 questions → 3 MCQ, 2 T/F)
+- Fallback handling: If AI deviates, system enforces requested types

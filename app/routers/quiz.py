@@ -28,7 +28,146 @@ ai_service = GeminiQuestionGenerationService()
 text_service = TextExtractionService()
 file_generation_service = FileGenerationService()
 
-@router.post("/generate")
+@router.post("/generate", responses={
+    200: {
+        "description": "Quiz generated successfully", 
+        "content": {
+            "application/json": {
+                "examples": {
+                    "multiple_choice_example": {
+                        "summary": "Multiple Choice Questions",
+                        "description": "Example response when generating multiple choice questions",
+                        "value": {
+                            "error": False,
+                            "data": {
+                                "questions": [
+                                    {
+                                        "id": "ad85f296-610f-4d3e-9ed1-1f6fcbc5506a",
+                                        "question_text": "In what year did Kane Williamson make his first-class debut?",
+                                        "question_type": "multiple_choice",
+                                        "options": [
+                                            {"text": "2008", "is_correct": False},
+                                            {"text": "2010", "is_correct": False},
+                                            {"text": "2007", "is_correct": True},
+                                            {"text": "2009", "is_correct": False}
+                                        ],
+                                        "correct_answer": None,
+                                        "explanation": "Williamson's first-class debut occurred in 2007 for Tauranga Boys' College."
+                                    }
+                                ],
+                                "total_questions": 1,
+                                "difficulty_levels": ["basic"],
+                                "topic": "Kane Williamson",
+                                "generated_at": "2025-08-20T15:02:54.610211",
+                                "quiz_settings": {
+                                    "requested_questions": 1,
+                                    "requested_question_types": ["multiple_choice"],
+                                    "difficulty_levels": ["basic"],
+                                    "topic_focus": "Kane Williamson"
+                                },
+                                "text_processing": {
+                                    "input_length": 1718,
+                                    "chunking_used": False,
+                                    "max_chunk_size": 4000
+                                }
+                            },
+                            "message": "Quiz generated successfully"
+                        }
+                    },
+                    "true_false_example": {
+                        "summary": "True/False Questions",
+                        "description": "Example response when generating true/false questions with options array",
+                        "value": {
+                            "error": False,
+                            "data": {
+                                "questions": [
+                                    {
+                                        "id": "4db67fe7-1f17-44ef-ad21-beed72e04693",
+                                        "question_text": "Kane Williamson's international cricket debut was in 2007.",
+                                        "question_type": "true_false",
+                                        "options": [
+                                            {"text": "True", "is_correct": False},
+                                            {"text": "False", "is_correct": True}
+                                        ],
+                                        "correct_answer": None,
+                                        "explanation": "His international debut was in 2010, not 2007."
+                                    }
+                                ],
+                                "total_questions": 1,
+                                "difficulty_levels": ["basic"],
+                                "topic": "Kane Williamson",
+                                "generated_at": "2025-08-20T15:00:07.695216",
+                                "quiz_settings": {
+                                    "requested_questions": 1,
+                                    "requested_question_types": ["true_false"],
+                                    "difficulty_levels": ["basic"],
+                                    "topic_focus": "Kane Williamson"
+                                },
+                                "text_processing": {
+                                    "input_length": 1718,
+                                    "chunking_used": False,
+                                    "max_chunk_size": 4000
+                                }
+                            },
+                            "message": "Quiz generated successfully"
+                        }
+                    },
+                    "mixed_questions_example": {
+                        "summary": "Mixed Question Types",
+                        "description": "Example response when generating mixed question types",
+                        "value": {
+                            "error": False,
+                            "data": {
+                                "questions": [
+                                    {
+                                        "id": "ad85f296-610f-4d3e-9ed1-1f6fcbc5506a",
+                                        "question_text": "Which ICC tournament final did Kane Williamson's team reach in 2019?",
+                                        "question_type": "multiple_choice",
+                                        "options": [
+                                            {"text": "ICC World Test Championship", "is_correct": False},
+                                            {"text": "T20 World Cup", "is_correct": False},
+                                            {"text": "ICC Champions Trophy", "is_correct": False},
+                                            {"text": "Cricket World Cup", "is_correct": True}
+                                        ],
+                                        "correct_answer": None,
+                                        "explanation": "New Zealand reached the final of the 2019 Cricket World Cup under Williamson's captaincy."
+                                    },
+                                    {
+                                        "id": "4db67fe7-1f17-44ef-ad21-beed72e04693",
+                                        "question_text": "Williamson's father, Brett, was also a cricketer.",
+                                        "question_type": "true_false",
+                                        "options": [
+                                            {"text": "True", "is_correct": True},
+                                            {"text": "False", "is_correct": False}
+                                        ],
+                                        "correct_answer": None,
+                                        "explanation": "His father was indeed a former cricketer."
+                                    }
+                                ],
+                                "total_questions": 2,
+                                "difficulty_levels": ["basic"],
+                                "topic": "Kane Williamson",
+                                "generated_at": "2025-08-20T15:00:07.695216",
+                                "quiz_settings": {
+                                    "requested_questions": 2,
+                                    "requested_question_types": ["multiple_choice", "true_false"],
+                                    "difficulty_levels": ["basic"],
+                                    "topic_focus": "Kane Williamson"
+                                },
+                                "text_processing": {
+                                    "input_length": 1718,
+                                    "chunking_used": False,
+                                    "max_chunk_size": 4000
+                                }
+                            },
+                            "message": "Quiz generated successfully"
+                        }
+                    }
+                }
+            }
+        }
+    }
+})
 async def generate_quiz_from_text(request: QuizGenerationRequest):
     """Generate quiz questions from text input using Google Gemini"""
     try:
@@ -74,7 +213,58 @@ async def generate_quiz_from_text(request: QuizGenerationRequest):
         logger.error(f"Error generating quiz: {str(e)}")
         return error_response("Failed to generate quiz")
 
-@router.post("/generate-from-file")
+@router.post("/generate-from-file", responses={
+    200: {
+        "description": "Quiz generated successfully from uploaded file",
+        "content": {
+            "application/json": {
+                "examples": {
+                    "file_upload_success": {
+                        "summary": "Successful File Upload Quiz Generation",
+                        "description": "Example response when successfully generating quiz from uploaded file",
+                        "value": {
+                            "error": False,
+                            "data": {
+                                "questions": [
+                                    {
+                                        "id": "8ecc32d3-03c6-4707-9630-d986afc7a774",
+                                        "question_text": "In what year did Kane Williamson make his first-class debut?",
+                                        "question_type": "multiple_choice",
+                                        "options": [
+                                            {"text": "2006", "is_correct": False},
+                                            {"text": "2007", "is_correct": True},
+                                            {"text": "2008", "is_correct": False},
+                                            {"text": "2010", "is_correct": False}
+                                        ],
+                                        "correct_answer": None,
+                                        "explanation": "Williamson made his first-class debut in 2007 for Tauranga Boys' College."
+                                    }
+                                ],
+                                "total_questions": 1,
+                                "difficulty_levels": ["intermediate"],
+                                "topic": "Kane Williamson Cricket Career",
+                                "generated_at": "2025-08-20T15:00:07.695216",
+                                "source_file": "kane_williamson_biography.pdf",
+                                "quiz_settings": {
+                                    "requested_questions": 1,
+                                    "requested_question_types": ["multiple_choice"],
+                                    "difficulty_levels": ["intermediate"],
+                                    "topic_focus": "Kane Williamson Cricket Career"
+                                },
+                                "text_processing": {
+                                    "extracted_text_length": 2450,
+                                    "chunking_used": False,
+                                    "max_chunk_size": 4000
+                                }
+                            },
+                            "message": "Quiz generated successfully from file"
+                        }
+                    }
+                }
+            }
+        }
+    }
+})
 async def generate_quiz_from_file(
     file: UploadFile = File(...),
     num_questions: int = Form(default=5, ge=1, le=40),
@@ -206,7 +396,44 @@ async def generate_quiz_from_file(
         logger.error(f"Error generating quiz from file: {str(e)}")
         return error_response("Failed to generate quiz from file")
 
-@router.get("/test-gemini")
+@router.get("/test-gemini", responses={
+    200: {
+        "description": "Gemini connection test completed",
+        "content": {
+            "application/json": {
+                "examples": {
+                    "connection_success": {
+                        "summary": "Gemini Connected",
+                        "description": "Example response when Gemini API is accessible",
+                        "value": {
+                            "error": False,
+                            "data": {
+                                "gemini_connected": True,
+                                "model": "gemini-pro",
+                                "status": "connected"
+                            },
+                            "message": "Gemini connection test completed"
+                        }
+                    },
+                    "connection_failure": {
+                        "summary": "Gemini Connection Failed",
+                        "description": "Example response when Gemini API is not accessible",
+                        "value": {
+                            "error": True,
+                            "data": {
+                                "gemini_connected": False,
+                                "model": "gemini-pro",
+                                "status": "connection_failed",
+                                "error": "API key not configured or invalid"
+                            },
+                            "message": "Failed to test Gemini connection"
+                        }
+                    }
+                }
+            }
+        }
+    }
+})
 async def test_gemini_connection():
     """Test Google Gemini API connection"""
     try:
@@ -225,7 +452,32 @@ async def test_gemini_connection():
             "error": str(e)
         })
 
-@router.get("/question-types")
+@router.get("/question-types", responses={
+    200: {
+        "description": "Available question types retrieved successfully",
+        "content": {
+            "application/json": {
+                "examples": {
+                    "question_types": {
+                        "summary": "Available Question Types",
+                        "description": "List of supported question types",
+                        "value": {
+                            "error": False,
+                            "data": {
+                                "question_types": [
+                                    {"value": "multiple_choice", "label": "Multiple Choice"},
+                                    {"value": "true_false", "label": "True False"},
+                                    {"value": "open_ended", "label": "Open Ended"}
+                                ]
+                            },
+                            "message": "Question types retrieved successfully"
+                        }
+                    }
+                }
+            }
+        }
+    }
+})
 async def get_question_types():
     """Get available question types"""
     return success_response({
@@ -235,7 +487,32 @@ async def get_question_types():
         ]
     }, "Question types retrieved successfully")
 
-@router.get("/difficulty-levels")
+@router.get("/difficulty-levels", responses={
+    200: {
+        "description": "Available difficulty levels retrieved successfully",
+        "content": {
+            "application/json": {
+                "examples": {
+                    "difficulty_levels": {
+                        "summary": "Available Difficulty Levels",
+                        "description": "List of supported difficulty levels",
+                        "value": {
+                            "error": False,
+                            "data": {
+                                "difficulty_levels": [
+                                    {"value": "basic", "label": "Basic"},
+                                    {"value": "intermediate", "label": "Intermediate"},
+                                    {"value": "advanced", "label": "Advanced"}
+                                ]
+                            },
+                            "message": "Difficulty levels retrieved successfully"
+                        }
+                    }
+                }
+            }
+        }
+    }
+})
 async def get_difficulty_levels():
     """Get available difficulty levels"""
     return success_response({
@@ -245,7 +522,36 @@ async def get_difficulty_levels():
         ]
     }, "Difficulty levels retrieved successfully")
 
-@router.get("/limits")
+@router.get("/limits", responses={
+    200: {
+        "description": "System limits and constraints retrieved successfully",
+        "content": {
+            "application/json": {
+                "examples": {
+                    "system_limits": {
+                        "summary": "System Limits and Constraints",
+                        "description": "Current system configuration and limits",
+                        "value": {
+                            "error": False,
+                            "data": {
+                                "max_questions": 40,
+                                "min_questions": 1,
+                                "max_file_size": 10485760,
+                                "max_file_size_mb": 10.0,
+                                "allowed_file_types": ["pdf", "docx", "txt"],
+                                "min_text_length": 50,
+                                "ai_model": "gemini-pro",
+                                "max_input_chars": 4000,
+                                "chunking_enabled": True
+                            },
+                            "message": "System limits retrieved successfully"
+                        }
+                    }
+                }
+            }
+        }
+    }
+})
 async def get_limits():
     """Get system limits and constraints"""
     return success_response({
@@ -260,7 +566,66 @@ async def get_limits():
         "chunking_enabled": settings.ENABLE_TEXT_CHUNKING
     }, "System limits retrieved successfully")
 
-@router.get("/usage-examples")
+@router.get("/usage-examples", responses={
+    200: {
+        "description": "API usage examples retrieved successfully",
+        "content": {
+            "application/json": {
+                "examples": {
+                    "usage_examples": {
+                        "summary": "API Usage Examples and Documentation",
+                        "description": "Comprehensive examples for using the API",
+                        "value": {
+                            "error": False,
+                            "data": {
+                                "question_types": {
+                                    "description": "Specify one or more question types",
+                                    "accepted_formats": [
+                                        "multiple_choice", "multiple-choice", "mcq", "mc",
+                                        "true_false", "true-false", "tf", "bool", "boolean", 
+                                        "open_ended", "open-ended", "essay", "text", "open"
+                                    ],
+                                    "examples": {
+                                        "single_type": "multiple_choice",
+                                        "multiple_types": "multiple_choice,true_false,open_ended",
+                                        "mixed_format": "mcq,tf,essay"
+                                    }
+                                },
+                                "difficulty_levels": {
+                                    "description": "Choose one or more difficulty levels for questions",
+                                    "accepted_formats": [
+                                        "basic", "easy", "simple", "beginner",
+                                        "intermediate", "medium", "moderate", "normal",
+                                        "advanced", "hard", "difficult", "expert", "complex"
+                                    ],
+                                    "examples": {
+                                        "single_level": "intermediate",
+                                        "multiple_levels": "basic,intermediate,advanced",
+                                        "mixed_format": "easy,medium,hard"
+                                    }
+                                },
+                                "api_examples": {
+                                    "text_generation": {
+                                        "method": "POST",
+                                        "endpoint": "/quiz/generate",
+                                        "sample_request": {
+                                            "text": "Your content here...",
+                                            "num_questions": 10,
+                                            "question_types": ["multiple_choice", "true_false"],
+                                            "difficulty_levels": ["basic", "intermediate"],
+                                            "topic": "Optional specific topic"
+                                        }
+                                    }
+                                }
+                            },
+                            "message": "Usage examples retrieved successfully"
+                        }
+                    }
+                }
+            }
+        }
+    }
+})
 async def get_usage_examples():
     """Get usage examples for API parameters"""
     return success_response({
@@ -326,7 +691,22 @@ async def get_usage_examples():
         }
     }, "Usage examples retrieved successfully")
 
-@router.post("/download/txt")
+@router.post("/download/txt", responses={
+    200: {
+        "description": "TXT file generated and downloaded successfully",
+        "content": {
+            "text/plain": {
+                "examples": {
+                    "txt_download": {
+                        "summary": "TXT File Download",
+                        "description": "Returns a formatted TXT file with quiz questions",
+                        "value": "File content will be streamed as attachment"
+                    }
+                }
+            }
+        }
+    }
+})
 async def download_quiz_txt(request: DownloadRequest):
     """Download quiz questions as TXT file"""
     try:
@@ -440,7 +820,22 @@ async def download_quiz_txt(request: DownloadRequest):
         logger.error(f"Error generating TXT download: {str(e)}")
         return error_response("Failed to generate TXT file")
 
-@router.post("/download/pdf")
+@router.post("/download/pdf", responses={
+    200: {
+        "description": "PDF file generated and downloaded successfully",
+        "content": {
+            "application/pdf": {
+                "examples": {
+                    "pdf_download": {
+                        "summary": "PDF File Download",
+                        "description": "Returns a professionally formatted PDF with quiz questions",
+                        "value": "Binary PDF content will be streamed as attachment"
+                    }
+                }
+            }
+        }
+    }
+})
 async def download_quiz_pdf(request: DownloadRequest):
     """Download quiz questions as PDF file"""
     try:
@@ -512,7 +907,22 @@ async def download_quiz_pdf(request: DownloadRequest):
         logger.error(f"Error generating PDF download: {str(e)}")
         return error_response("Failed to generate PDF file")
 
-@router.post("/download/answer-key")
+@router.post("/download/answer-key", responses={
+    200: {
+        "description": "Answer key TXT file generated and downloaded successfully",
+        "content": {
+            "text/plain": {
+                "examples": {
+                    "answer_key_download": {
+                        "summary": "Answer Key TXT Download",
+                        "description": "Returns a TXT file with answer key and explanations",
+                        "value": "Answer key content will be streamed as attachment"
+                    }
+                }
+            }
+        }
+    }
+})
 async def download_answer_key(request: AnswerKeyRequest):
     """Download answer key as TXT file"""
     try:

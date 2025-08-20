@@ -15,11 +15,13 @@ logger = logging.getLogger(__name__)
 class GoogleAuthService:
     """Service for handling Google OAuth 2.0 authentication"""
     
+    # Define scopes in a consistent order that matches Google's expectations
     SCOPES = [
-        'https://www.googleapis.com/auth/forms.body',
-        'https://www.googleapis.com/auth/drive.file',
+        'openid',  # OpenID Connect - should be first
         'https://www.googleapis.com/auth/userinfo.email',
-        'https://www.googleapis.com/auth/userinfo.profile'
+        'https://www.googleapis.com/auth/userinfo.profile', 
+        'https://www.googleapis.com/auth/forms.body',
+        'https://www.googleapis.com/auth/drive.file'
     ]
     
     def __init__(self):
@@ -47,8 +49,8 @@ class GoogleAuthService:
             
             auth_url, _ = flow.authorization_url(
                 access_type='offline',
-                include_granted_scopes='true',
-                state=state
+                state=state,
+                prompt='consent'
             )
             
             return auth_url
@@ -60,30 +62,73 @@ class GoogleAuthService:
     def exchange_code_for_tokens(self, code: str) -> Dict[str, Any]:
         """Exchange authorization code for access and refresh tokens"""
         try:
+            logger.info(f"Attempting to exchange authorization code (length: {len(code)})")
+            logger.debug(f"Using redirect URI: {settings.GOOGLE_REDIRECT_URI}")
+            logger.debug(f"Using client ID: {settings.GOOGLE_CLIENT_ID[:10]}...")
+            
+            # Use the same flow configuration as authorization
             flow = Flow.from_client_config(
                 self.client_config,
                 scopes=self.SCOPES,
                 redirect_uri=settings.GOOGLE_REDIRECT_URI
             )
             
+            # Log the token exchange attempt
+            logger.info("Initiating token exchange with Google OAuth")
+            
+            # Exchange the code for tokens
             flow.fetch_token(code=code)
             
             credentials = flow.credentials
+            logger.info("Successfully received credentials from Google")
             
+            # Verify we have a valid token
+            if not credentials.token:
+                logger.error("No access token received from Google")
+                raise ValueError("No access token received")
+            
+            if not credentials.refresh_token:
+                logger.warning("No refresh token received - user may need to re-authenticate with prompt=consent")
+            
+            logger.info("Getting user information from Google API")
             # Get user info
             user_info = self.get_user_info(credentials)
+            
+            # Calculate actual expiry time if available
+            expires_in = 3600  # Default 1 hour
+            if hasattr(credentials, 'expiry') and credentials.expiry:
+                import datetime
+                expires_in = int((credentials.expiry - datetime.datetime.utcnow()).total_seconds())
+                expires_in = max(expires_in, 0)  # Ensure not negative
+                logger.debug(f"Token expires in {expires_in} seconds")
+            
+            logger.info(f"OAuth flow completed successfully for user: {user_info.email}")
             
             return {
                 "access_token": credentials.token,
                 "refresh_token": credentials.refresh_token,
-                "expires_in": 3600,  # Default 1 hour
+                "expires_in": expires_in,
                 "user_info": user_info,
                 "credentials_json": credentials.to_json()
             }
         
         except Exception as e:
             logger.error(f"Error exchanging code for tokens: {str(e)}")
-            raise HTTPException(status_code=400, detail="Failed to exchange authorization code")
+            logger.debug(f"Full error details: {repr(e)}")
+            
+            # Provide more specific error information
+            error_msg = "Failed to exchange authorization code"
+            if "Scope has changed" in str(e):
+                error_msg = "OAuth scope mismatch - please try authenticating again"
+            elif "invalid_grant" in str(e).lower():
+                logger.error("Invalid grant error - possible causes: expired code, code reuse, redirect URI mismatch, or clock skew")
+                error_msg = "Authorization code expired or invalid. Please start the authentication process again."
+            elif "invalid_client" in str(e).lower():
+                error_msg = "OAuth client configuration error - check client ID and secret"
+            elif "invalid_request" in str(e).lower():
+                error_msg = "Invalid OAuth request - check redirect URI configuration"
+            
+            raise HTTPException(status_code=400, detail=error_msg)
     
     def get_user_info(self, credentials: Credentials) -> UserInfo:
         """Get user information from Google API"""
@@ -91,10 +136,14 @@ class GoogleAuthService:
             service = build('oauth2', 'v2', credentials=credentials)
             user_info = service.userinfo().get().execute()
             
+            # Ensure required fields exist
+            if not user_info.get('id') or not user_info.get('email'):
+                raise ValueError("Incomplete user information received from Google")
+            
             return UserInfo(
                 id=user_info['id'],
                 email=user_info['email'],
-                name=user_info['name'],
+                name=user_info.get('name', user_info.get('email', 'Unknown')),
                 picture=user_info.get('picture')
             )
         

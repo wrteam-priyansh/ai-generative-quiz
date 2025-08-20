@@ -53,6 +53,29 @@ The AI Quiz Generator is a FastAPI-based backend service that integrates Google 
 - ✅ Professional document formatting
 - ✅ JSON request body support for downloads
 
+### Phase 8: API Documentation Enhancement (Completed)
+- ✅ Comprehensive response examples for all endpoints
+- ✅ Interactive FastAPI documentation with real data
+- ✅ Multiple scenario examples (success/error cases)
+- ✅ True/false question format showcase
+- ✅ Authentication flow examples
+- ✅ Google Forms integration examples
+
+### Phase 9: OAuth Flow Refinement (Completed)
+- ✅ OAuth scope mismatch resolution (added OpenID support)
+- ✅ Frontend redirect implementation after authentication
+- ✅ Base64 credential encoding for URL safety
+- ✅ State parameter validation and parsing
+- ✅ Enhanced error handling with specific messages
+- ✅ OAuth debugging endpoint for troubleshooting
+
+### Phase 10: AI Question Generation Enhancement (Completed)
+- ✅ Natural explanation generation (removed mechanical text references)
+- ✅ Strict question type enforcement and distribution
+- ✅ True/false questions with consistent options array format
+- ✅ Enhanced prompt engineering for better question quality
+- ✅ Smart question type distribution across requests
+
 ## Architecture
 
 ### Core Components
@@ -151,6 +174,32 @@ Service → Router → Standardized Response → Client
 }
 ```
 
+### 5. **OAuth Scope Management**
+**Problem**: Google OAuth was adding `openid` scope automatically, causing scope mismatch errors.
+
+**Solution**: Proactive scope management
+- Include `openid` in original scopes list
+- Proper scope ordering (OpenID Connect first)
+- Remove `include_granted_scopes` parameter
+- Enhanced error handling for OAuth issues
+
+### 6. **True/False Question Format Standardization**
+**Problem**: Inconsistent response format between multiple choice and true/false questions.
+
+**Solution**: Unified options array format
+- True/false questions now include options: `[{"text": "True", "is_correct": true}, {"text": "False", "is_correct": false}]`
+- Consistent with multiple choice format
+- Easier frontend integration
+
+### 7. **Frontend Integration via OAuth Redirect**
+**Problem**: Backend OAuth callback returned JSON, leaving users stuck on backend page.
+
+**Solution**: Automatic frontend redirect
+- Parse state parameter for original frontend URL
+- Redirect to frontend with auth results in URL parameters
+- Base64 encode credentials for URL safety
+- Fallback handling for invalid URLs
+
 ## Configuration Management
 
 ### Environment Variables
@@ -168,9 +217,10 @@ Service → Router → Standardized Response → Client
 ### Endpoint Categories
 
 #### 1. **Authentication** (`/auth`)
-- OAuth URL generation
-- Callback handling
-- Token management
+- OAuth URL generation with state parameter support
+- Callback handling with automatic frontend redirect
+- Token management (refresh, validation)
+- OAuth debugging endpoint for troubleshooting
 
 #### 2. **Quiz Generation** (`/quiz`)
 - Text-based generation
@@ -202,8 +252,12 @@ Service → Router → Standardized Response → Client
 
 ### Manual Testing Endpoints
 - `GET /health` - Service health check
-- `GET /quiz/test-gemini` - AI service connectivity
-- `GET /quiz/usage-examples` - API documentation
+- `GET /quiz/test-gemini` - AI service connectivity  
+- `GET /quiz/usage-examples` - Comprehensive API documentation
+- `GET /auth/debug` - OAuth configuration debugging
+- `GET /quiz/question-types` - Available question types
+- `GET /quiz/difficulty-levels` - Available difficulty levels
+- `GET /quiz/limits` - System configuration and limits
 
 ### Integration Testing
 - OAuth flow validation
@@ -324,17 +378,32 @@ Service → Router → Standardized Response → Client
 
 ### Common Issues
 1. **Gemini API errors**: Check API key and quotas
-2. **OAuth failures**: Verify redirect URIs and credentials
+2. **OAuth failures**: 
+   - `invalid_grant`: Check redirect URI exact match, code expiry (10 min), and single use
+   - `scope_mismatch`: Verify OpenID scope inclusion and consistent scope ordering
+   - Frontend stuck: Ensure callback endpoint redirects properly
 3. **File processing errors**: Check file format and size
 4. **Chunking issues**: Adjust chunk size settings
+5. **Question format issues**: Verify true/false questions include options array
+6. **Natural explanations**: Check for mechanical text references in responses
 
 ### Debug Tools
-- `/quiz/test-gemini` endpoint
-- Application logs in `app.log`
+- `/auth/debug` - OAuth configuration validation
+- `/quiz/test-gemini` - AI service connectivity
+- `/quiz/usage-examples` - Complete API documentation
+- Application logs with OAuth flow tracking
 - Health check endpoints
 - Environment variable validation
 
+### OAuth Debugging Steps
+1. Check `/auth/debug` for configuration issues
+2. Verify Google Cloud Console settings match exactly
+3. Test with fresh authorization codes (don't reuse)
+4. Monitor logs for specific OAuth error types
+5. Validate redirect URI encoding in state parameter
+
 ---
 
-*Last updated: Phase 7 - File Download System completed*
-*Next review: After frontend integration and download feature testing*
+*Last updated: Phase 10 - AI Question Generation Enhancement completed*
+*Major improvements: OAuth flow fixes, API documentation enhancement, true/false format standardization, natural explanation generation*
+*Next review: After frontend integration testing and user feedback collection*
