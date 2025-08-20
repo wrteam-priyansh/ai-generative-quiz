@@ -3,21 +3,6 @@
 ## 🎯 Project Overview
 Create a NextJS frontend for the AI Quiz Generator that integrates with the existing FastAPI backend. This frontend will provide a modern, interactive UI for quiz generation, file downloads, and Google Forms integration.
 
-## 📁 Directory Setup
-
-### 1. Create New Directory Structure
-```bash
-# Navigate to parent directory
-cd /Users/priyansh/Desktop/python-projects/
-
-# Create frontend directory
-mkdir ai-generative-quiz-frontend
-cd ai-generative-quiz-frontend
-
-# Initialize NextJS project
-npx create-next-app@latest . --typescript --tailwind --eslint --app
-```
-
 ## 🚀 Phase 1: Project Setup & Configuration
 
 ### ✅ TODO: Initial Setup
