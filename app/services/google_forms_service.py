@@ -30,22 +30,19 @@ class GoogleFormsService:
             credentials = self.auth_service.get_credentials_from_json(credentials_json)
             forms_service = build('forms', 'v1', credentials=credentials)
             
-            # Create the form
+            # Create the form with only title (API restriction)
             form_body = {
                 "info": {
-                    "title": form_title,
-                    "description": form_description or f"Auto-generated quiz with {len(questions)} questions"
-                },
-                "settings": {
-                    "quizSettings": {
-                        "isQuiz": is_quiz
-                    } if is_quiz else {}
+                    "title": form_title
                 }
             }
             
             # Create the form
             form = forms_service.forms().create(body=form_body).execute()
             form_id = form['formId']
+            
+            # Add form settings and description via batchUpdate
+            self._update_form_settings(forms_service, form_id, form_description or f"Auto-generated quiz with {len(questions)} questions", is_quiz)
             
             # Add questions to the form
             self._add_questions_to_form(forms_service, form_id, questions, is_quiz)
@@ -64,6 +61,47 @@ class GoogleFormsService:
         except Exception as e:
             logger.error(f"Error creating Google Form: {str(e)}")
             raise HTTPException(status_code=500, detail=f"Failed to create Google Form: {str(e)}")
+    
+    def _update_form_settings(
+        self,
+        forms_service: Any,
+        form_id: str,
+        description: str,
+        is_quiz: bool
+    ) -> None:
+        """Update form settings and description via batchUpdate"""
+        
+        requests = []
+        
+        # Add description
+        requests.append({
+            "updateFormInfo": {
+                "info": {
+                    "description": description
+                },
+                "updateMask": "description"
+            }
+        })
+        
+        # Add quiz settings if needed
+        if is_quiz:
+            requests.append({
+                "updateSettings": {
+                    "settings": {
+                        "quizSettings": {
+                            "isQuiz": True
+                        }
+                    },
+                    "updateMask": "quizSettings"
+                }
+            })
+        
+        if requests:
+            batch_update_body = {"requests": requests}
+            forms_service.forms().batchUpdate(
+                formId=form_id,
+                body=batch_update_body
+            ).execute()
     
     def _add_questions_to_form(
         self,
