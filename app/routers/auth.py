@@ -119,7 +119,8 @@ def _redirect_to_frontend(
         # Default frontend URL
         default_frontend_url = "http://localhost:3000/generate"
         
-        # Parse the state parameter to get the intended redirect URL
+        # Extract clean base URL from state parameter
+        base_url = default_frontend_url
         if state:
             try:
                 # URL decode the state parameter
@@ -129,31 +130,35 @@ def _redirect_to_frontend(
                 # Validate that it's a safe frontend URL
                 allowed_origins = ["http://localhost:3000", "http://127.0.0.1:3000"]
                 if any(decoded_state.startswith(origin) for origin in allowed_origins):
-                    redirect_url = decoded_state
+                    # Extract just the base URL (remove any existing query parameters)
+                    if '?' in decoded_state:
+                        base_url = decoded_state.split('?')[0]
+                    elif '&' in decoded_state:
+                        # Handle malformed URLs where & appears without ?
+                        base_url = decoded_state.split('&')[0]
+                    else:
+                        base_url = decoded_state
                 else:
                     logger.warning(f"Invalid state URL, using default: {decoded_state}")
-                    redirect_url = default_frontend_url
+                    base_url = default_frontend_url
             except Exception as e:
                 logger.error(f"Error parsing state parameter: {str(e)}")
-                redirect_url = default_frontend_url
-        else:
-            redirect_url = default_frontend_url
+                base_url = default_frontend_url
         
-        # Add authentication status to the URL
-        separator = "&" if "?" in redirect_url else "?"
-        redirect_url += f"{separator}auth={auth_status}"
+        # Build query parameters
+        query_params = [f"auth={auth_status}"]
         
         # Add error message if there's an error
         if error_message and auth_status == "error":
             encoded_error = urllib.parse.quote(error_message)
-            redirect_url += f"&error={encoded_error}"
+            query_params.append(f"error={encoded_error}")
         
         # Add user data if successful 
         if auth_data and auth_status == "success":
             if auth_data.get("user_email"):
-                redirect_url += f"&user_email={urllib.parse.quote(auth_data['user_email'])}"
+                query_params.append(f"user_email={urllib.parse.quote(auth_data['user_email'])}")
             if auth_data.get("user_name"):
-                redirect_url += f"&user_name={urllib.parse.quote(auth_data['user_name'])}"
+                query_params.append(f"user_name={urllib.parse.quote(auth_data['user_name'])}")
             
             # Add credentials as base64 encoded JSON for the frontend
             if auth_data.get("credentials"):
@@ -164,11 +169,14 @@ def _redirect_to_frontend(
                     credentials_b64 = base64.b64encode(
                         auth_data["credentials"].encode('utf-8')
                     ).decode('ascii')
-                    redirect_url += f"&credentials={credentials_b64}"
+                    query_params.append(f"credentials={credentials_b64}")
                     logger.debug("Added encoded credentials to redirect URL")
                 except Exception as e:
                     logger.error(f"Error encoding credentials: {str(e)}")
                     # Continue without credentials - frontend can call auth endpoints
+        
+        # Construct final URL with clean query string
+        redirect_url = f"{base_url}?{'&'.join(query_params)}"
         
         logger.info(f"Redirecting to frontend: {redirect_url}")
         
