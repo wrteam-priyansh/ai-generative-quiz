@@ -75,7 +75,7 @@ Use `success_response()` and `error_response()` helpers from `app.models.respons
 ### Service Dependencies
 - **GeminiQuestionGenerationService**: Requires `GOOGLE_GEMINI_API_KEY`, handles both single-text and chunked processing
 - **GoogleAuthService**: Manages OAuth flow, requires Google Cloud Console setup
-- **GoogleFormsService**: Creates forms with up to 40 questions, requires authenticated credentials
+- **GoogleFormsService**: Creates forms with up to 40 questions, requires authenticated credentials. **FIXED**: Now properly handles Google Forms API restrictions by creating form with title-only first, then using batchUpdate for description and quiz settings
 - **TextExtractionService**: Processes PDF/DOCX/TXT files without external dependencies
 - **FileGenerationService**: Generates TXT and PDF downloads using ReportLab, no external dependencies
 
@@ -116,6 +116,11 @@ Forms are created with automatic question type conversion:
 - `open_ended` → Paragraph text input
 Quiz mode is enabled by default with automatic scoring.
 
+**IMPORTANT**: Google Forms API has strict creation restrictions. The service now properly:
+1. Creates form with only `title` in initial request
+2. Uses `batchUpdate` to add description and quiz settings
+3. Uses `batchUpdate` to add all questions
+
 ## Error Handling
 
 ### Custom Exception Types
@@ -125,6 +130,17 @@ Quiz mode is enabled by default with automatic scoring.
 - `AuthenticationException` - OAuth and credential problems
 
 All exceptions are automatically caught and converted to standardized error responses via registered exception handlers in `main.py`.
+
+### Google Forms API Error Resolution
+**Fixed Issue**: "Only info.title can be set when creating a form. To add items and settings, use batchUpdate."
+
+**Root Cause**: Google Forms API restricts form creation requests to only include `info.title`. All other properties (description, quiz settings, questions) must be added via separate `batchUpdate` calls.
+
+**Solution Implemented**:
+1. `GoogleFormsService.create_form_with_questions()` now creates form with title only
+2. New method `_update_form_settings()` handles description and quiz settings via batchUpdate
+3. Existing `_add_questions_to_form()` method handles questions via batchUpdate
+4. All operations are properly sequenced to avoid API conflicts
 
 ## Key Integration Points
 

@@ -23,9 +23,10 @@ A FastAPI backend service for generating quiz questions using AI and creating Go
 
 ### 🔗 Google Services Integration
 - **OAuth 2.0 Flow**: Secure authentication with automatic frontend redirect
-- **Google Forms API**: Creates interactive forms with quiz mode and automatic scoring
+- **Google Forms API**: Creates interactive forms with quiz mode and automatic scoring (fixed API restrictions)
 - **Drive API**: Manages form permissions and sharing
 - **Scope Management**: Handles OpenID Connect and proper scope ordering
+- **Fixed Form Creation**: Resolved Google Forms API restriction where only title can be set during creation
 
 ### 📊 Enhanced API Documentation
 - **Interactive Examples**: Comprehensive response examples for all endpoints
@@ -44,6 +45,7 @@ A FastAPI backend service for generating quiz questions using AI and creating Go
 - **Comprehensive Logging**: Debug-friendly logging with OAuth flow tracking
 - **Configuration Management**: Environment-based settings with validation
 - **CORS Support**: Frontend integration with configurable origins
+- **Google Forms API Compliance**: Proper form creation using title-only initial request followed by batchUpdate
 
 ## Prerequisites
 

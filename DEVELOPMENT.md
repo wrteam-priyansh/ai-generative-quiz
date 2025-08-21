@@ -76,6 +76,13 @@ The AI Quiz Generator is a FastAPI-based backend service that integrates Google 
 - ✅ Enhanced prompt engineering for better question quality
 - ✅ Smart question type distribution across requests
 
+### Phase 11: Google Forms API Compliance Fix (Completed)
+- ✅ Fixed Google Forms API restriction error: "Only info.title can be set when creating a form"
+- ✅ Implemented proper form creation workflow with title-only initial request
+- ✅ Added `_update_form_settings()` method for description and quiz settings via batchUpdate
+- ✅ Ensured proper sequencing of form creation, settings update, and questions addition
+- ✅ Updated error handling for Google Forms API compliance issues
+
 ## Architecture
 
 ### Core Components
@@ -386,6 +393,10 @@ Service → Router → Standardized Response → Client
 4. **Chunking issues**: Adjust chunk size settings
 5. **Question format issues**: Verify true/false questions include options array
 6. **Natural explanations**: Check for mechanical text references in responses
+7. **Google Forms API errors**:
+   - `"Only info.title can be set when creating a form"`: **FIXED** - Service now uses proper API workflow
+   - Form creation failures: Check that credentials have Forms API scope enabled
+   - Missing quiz settings: Verify batchUpdate operations complete successfully
 
 ### Debug Tools
 - `/auth/debug` - OAuth configuration validation
@@ -404,6 +415,7 @@ Service → Router → Standardized Response → Client
 
 ---
 
-*Last updated: Phase 10 - AI Question Generation Enhancement completed*
-*Major improvements: OAuth flow fixes, API documentation enhancement, true/false format standardization, natural explanation generation*
+*Last updated: Phase 11 - Google Forms API Compliance Fix completed*
+*Major improvements: Google Forms API restriction fix, proper form creation workflow, enhanced error handling*
+*Previous phases: OAuth flow fixes, API documentation enhancement, true/false format standardization, natural explanation generation*
 *Next review: After frontend integration testing and user feedback collection*
